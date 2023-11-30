@@ -85,7 +85,7 @@ void SimViewer::start()
     polyscope::options::usePrefsFile = false;
     polyscope::options::alwaysRedraw = true;
     polyscope::options::openImGuiWindowForUserCallback = true;
-    polyscope::options::buildGui = false;
+    polyscope::options::buildGui = true;
     polyscope::options::maxFPS = 60;
     polyscope::options::groundPlaneEnabled = false;
 

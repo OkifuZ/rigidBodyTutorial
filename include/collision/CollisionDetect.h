@@ -46,9 +46,12 @@ private:
     //
     void collisionDetectSphereBox(RigidBody* body0, RigidBody* body1);
 
+    Eigen::Vector3f ClosestPtPointBox(const Eigen::Vector3f& pt, const Eigen::Vector3f& bdim);
+    Eigen::Vector3f ClosestPtPointBox(const Eigen::Vector3f& pt, const Eigen::Vector3f& bdim, Eigen::Vector3f& normal);
+
 private:
 
     RigidBodySystem* m_rigidBodySystem;     // Rigid body system where collision detection is performed.
     std::vector<Contact*> m_contacts;       // Contact array.
-
+    const float thickness = 1e-5f;
 };

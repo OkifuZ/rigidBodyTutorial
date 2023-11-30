@@ -4,6 +4,8 @@
 #include "rigidbody/RigidBody.h"
 #include "rigidbody/RigidBodySystem.h"
 
+#include <iostream>
+
 CollisionDetect::CollisionDetect(RigidBodySystem* rigidBodySystem) : m_rigidBodySystem(rigidBodySystem)
 {
 
@@ -118,4 +120,62 @@ void CollisionDetect::collisionDetectSphereBox(RigidBody* body0, RigidBody* body
     Sphere* sphere = dynamic_cast<Sphere*>(body0->geometry.get());
     Box* box = dynamic_cast<Box*>(body1->geometry.get());
 
+    // transform sphere to local coord of box
+    const auto& trans = body1->x;
+    const auto& rot = body1->q;
+    Eigen::Vector3f pos_loc = rot.inverse() * (body0->x - trans);
+
+    Eigen::Vector3f n = Eigen::Vector3f::Zero();
+    auto clostP = ClosestPtPointBox(pos_loc, box->dim, n);
+    if (n == Eigen::Vector3f::Zero()) {
+        // sphere center in the box, let it go
+        return;
+    }
+
+    float peneration = (clostP - pos_loc).norm() - thickness - sphere->radius;
+    if (peneration < 0) {
+        n = rot * n;
+        n.normalize();
+        Eigen::Vector3f p = rot * clostP + trans;
+        float phi = std::sqrt(-peneration);
+        m_contacts.push_back(new Contact(body0, body1, p, n, phi));
+    }
+    else {
+        // no collision
+    }
+}
+
+
+Eigen::Vector3f CollisionDetect::ClosestPtPointBox(const Eigen::Vector3f& pt, const Eigen::Vector3f& bdim) {
+    Eigen::Vector3f q;
+    Eigen::Vector3f bdim_half = bdim * 0.5f;
+    for (int i = 0; i < 3; i++) {
+        float v = pt[i];
+        if (v <= -bdim_half[i]) v = -bdim_half[i];
+        if (v >= bdim_half[i]) v = bdim_half[i];
+        q[i] = v;
+    }
+    return q;
+}
+
+Eigen::Vector3f CollisionDetect::ClosestPtPointBox(const Eigen::Vector3f& pt, const Eigen::Vector3f& bdim, Eigen::Vector3f& normal) {
+    Eigen::Vector3f q;
+    Eigen::Vector3f bdim_half = bdim * 0.5f;
+    for (int i = 0; i < 3; i++) {
+        float v = pt[i];
+        if (v <= -bdim_half[i]) {
+            v = -bdim_half[i];
+            normal[i] = -1;
+        }
+        else if (v >= bdim_half[i]) {
+            v = bdim_half[i];
+            normal[i] = 1;
+        }
+        else {
+            normal[i] = 0;
+        }
+        q[i] = v;
+    }
+    //if (normal != Eigen::Vector3f::Zero()) normal.normalize();
+    return q;
 }

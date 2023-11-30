@@ -6,6 +6,8 @@
 
 #include "solvers/SolverBoxPGS.h"
 
+#include <iostream>
+
 namespace Eigen
 {
     typedef Matrix<float, 6, 1, ColMajor> Vector6f;
@@ -92,16 +94,39 @@ void RigidBodySystem::step(float dt)
 
     // Compute constraint forces.  
     // The LCP solver will be called here.
-    //
     calcConstraintForces(dt);
 
-    // TODO Perform numerical integration to first update the velocities of each rigid body in @a m_bodies, 
-    //      followed by the positions and orientations.
-    //
+    // Done
     for(RigidBody* b : m_bodies)
     {
+        if (b->fixed) {
+            b->xdot = Eigen::Vector3f::Zero();
+            b->omega = Eigen::Vector3f::Zero();
+            continue;
+        }
 
+        // velocity
+        b->xdot += dt * (1.0f / b->mass) * b->f;
+        b->omega += dt * b->Iinv * (b->tau - b->omega.cross(b->I * b->omega));
+
+        // position
+        b->x += dt * b->xdot;
+        
+        /*
+        const Eigen::Quaternionf& q = b->q;
+        // eigen quaternion accept args order: w,x,y,z
+        Eigen::Matrix<float, 4, 3, Eigen::ColMajor> H;
+        H.row(1) = Eigen::Vector3f{ -q.x(), -q.y(), -q.z() };
+        H.row(2) = Eigen::Vector3f{ q.w(), q.z(), -q.y() };
+        H.row(3) = Eigen::Vector3f{ -q.z(), q.w(), q.x() };
+        H.row(0) = Eigen::Vector3f{ -q.y(), -q.x(), q.w() };
+        b->q.coeffs() += dt * 0.5f * H * b->omega;
+        */
+
+        b->q.coeffs() += dt * kinematicMap(b->q, b->omega).coeffs();
+        b->q.normalize();
     }
+
 }
 
 void RigidBodySystem::clear()

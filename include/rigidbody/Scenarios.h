@@ -82,8 +82,9 @@ public:
         // Create a sphere.
         RigidBody* bodySphere = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
         bodySphere->x.y() = 4.0f;
+        //bodySphere->xdot = Eigen::Vector3f(10.0f, 0.0f, 0.0f);
         bodySphere->omega = Eigen::Vector3f(10.0f, 0.0f, 0.0f);
-        bodySphere->mesh->setTransparency(0.8f);
+        bodySphere->mesh->setTransparency(0.7f);
 
         RigidBody* bodyBox = new RigidBody(1.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
         bodyBox->fixed = true;
@@ -92,7 +93,7 @@ public:
         rigidBodySystem.addBody(bodyBox);
 
         bodySphere->mesh->setSurfaceColor({ 0.1f, 1.0f, 0.2f })->setEdgeWidth(1.0f);
-        bodyBox->mesh->setSurfaceColor({ 0.2f, 0.2f, 0.2f })->setSmoothShade(false)->setTransparency(0.4f);
+        bodyBox->mesh->setSurfaceColor({ 0.2f, 0.2f, 0.2f })->setSmoothShade(false)->setTransparency(0.5f);
     }
 
 };
