@@ -140,6 +140,7 @@ void SimViewer::draw()
         const float dt = m_dt / (float)m_subSteps;
         for(int i = 0; i < m_subSteps; ++i)
         {
+            //m_rigidBodySystem->step_semi(dt);
             m_rigidBodySystem->step(dt);
         }
 

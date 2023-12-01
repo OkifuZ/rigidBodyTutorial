@@ -23,6 +23,7 @@ public:
 
     // Advance the simulation.
     void step(float _dt);
+    void step_semi(float _dt);
 
     // Remove all rigid bodies and cleanup the memory.
     void clear();

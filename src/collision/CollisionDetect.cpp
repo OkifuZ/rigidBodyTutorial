@@ -132,13 +132,13 @@ void CollisionDetect::collisionDetectSphereBox(RigidBody* body0, RigidBody* body
         return;
     }
 
-    float peneration = (clostP - pos_loc).norm() - thickness - sphere->radius;
-    if (peneration < 0) {
+    float penerationSq = (clostP - pos_loc).norm() - sphere->radius - thickness;
+    if (penerationSq < 0) {
         n = rot * n;
         n.normalize();
         Eigen::Vector3f p = rot * clostP + trans;
-        float phi = std::sqrt(-peneration);
-        m_contacts.push_back(new Contact(body0, body1, p, n, phi));
+        float penetration = std::sqrt(-penerationSq);
+        m_contacts.push_back(new Contact(body0, body1, p, n, -penetration));
     }
     else {
         // no collision

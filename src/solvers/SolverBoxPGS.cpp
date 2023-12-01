@@ -30,7 +30,8 @@ void SolverBoxPGS::solve(float h)
     // Implement a PGS method that solves for the
     //      contact constraint forces in @a rigidBodySystem. 
     //      Assume a boxed LCP formulation.
-    
+    float hinv = 1.0f / h;
+
     std::vector<Contact*>& contacts = m_rigidBodySystem->getContacts();
     const int numContacts = contacts.size();
 
@@ -49,7 +50,9 @@ void SolverBoxPGS::solve(float h)
                 - (ct->J1.block<3, 3>(0, 0) * ct->body1->xdot + ct->J1.block<3, 3>(0, 3) * ct->body1->omega) // J1*vel1
                 - h * (ct->J0Minv.block<3, 3>(0, 0) * ct->body0->f + ct->J0Minv.block<3, 3>(0, 3) * ct->body0->tau) // dt*J0Minv*force0
                 - h * (ct->J1Minv.block<3, 3>(0, 0) * ct->body1->f + ct->J1Minv.block<3, 3>(0, 3) * ct->body1->tau);// dt*J1Minv*force1
-            // TODO stabilization
+            // stabilization
+            float gamma = h * ct->k / (h * ct->k + ct->b);
+            b[i] -= gamma * ct->phi * hinv;
         }
 
         // PGS main loop.
@@ -77,6 +80,8 @@ void SolverBoxPGS::solve(float h)
 
                 // Compute the diagonal term : Aii = J0*Minv0*J0^T + J1*Minv1*J1^T
                 Eigen::Matrix3f Aii = ct->J0Minv * ct->J0.transpose() + ct->J1Minv * ct->J1.transpose();
+                Aii(0, 0) += 1.0f / (ct->k * h * h + h * ct->b);
+                //Aii. += Eigen::Matrix3f::Identity() * (1.0f / (ct->k * h * h + h * ct->b));
 
                 // Update lambda by solving the sub-problem : Aii * contacts[i].lambda = x
                 //      For non-interpenetration constraints, lambda is non-negative and should be clamped
