@@ -29,32 +29,76 @@ Contact::~Contact()
 
 void Contact::computeContactFrame()
 {
+    static float small_num = 1e-5f;
     // Compute the contact frame, which consists of an orthonormal
     //  bases formed the vector n, t1, and t2
     // 
     //  The first bases direction is given by the normal, n.
     //  Use it to compute the other two directions.
 
-    // TODO Compute first tangent direction t1
-    //
+    // Compute first tangent direction t1
+    if (n.y() * n.y() + n.z() * n.z() < small_num) { // 1,0,0
+        t1 = n.cross(Eigen::Vector3f(0, 1, 0)).normalized();
+    }
+    else {
+        t1 = n.cross(Eigen::Vector3f(1, 0, 0)).normalized();
+    }
 
+    // Compute second tangent direction t2.
+    t2 = n.cross(t1).normalized();
+}
 
-    // TODO Compute second tangent direction t2.
-    //
+inline Eigen::Matrix3f vector2SkewMat(const Eigen::Vector3f& vec) {
+    Eigen::Matrix3f m;
+    m << 0, -vec.z(), vec.y(),
+        vec.z(), 0, vec.x(),
+        -vec.y(), vec.x(), 0;
+    return m;
 }
 
 void Contact::computeJacobian()
 {
-    // TODO Compute the Jacobians J0 and J1 
+    // Compute the Jacobians J0 and J1 
     // for body0 and body1, respectively.
-    // 
-    //
+    Eigen::Vector3f ra = p - body0->x;
+    Eigen::Vector3f rb = p - body1->x;
+
+    const auto& rax = vector2SkewMat(ra);
+    const auto& rbx = vector2SkewMat(rb);
+
+    /*J0.block<1, 3>(0, 0) = -n.transpose();
+    J0.block<1, 3>(1, 0) = -t1.transpose();
+    J0.block<1, 3>(2, 0) = -t2.transpose();
+    J0.block<1, 3>(0, 3) = n.transpose() * rax;
+    J0.block<1, 3>(1, 3) = t1.transpose() * rax;
+    J0.block<1, 3>(2, 3) = t2.transpose() * rax;
+
+    J1.block<1, 3>(0, 0) = n.transpose();
+    J1.block<1, 3>(1, 0) = t1.transpose();
+    J1.block<1, 3>(2, 0) = t2.transpose();
+    J1.block<1, 3>(0, 3) = -n.transpose() * rbx;
+    J1.block<1, 3>(1, 3) = -t1.transpose() * rbx;
+    J1.block<1, 3>(2, 3) = -t2.transpose() * rbx;*/
+
+    J0.block<1, 3>(0, 0) = n.transpose();
+    J0.block<1, 3>(1, 0) = t1.transpose();
+    J0.block<1, 3>(2, 0) = t2.transpose();
+    J0.block<1, 3>(0, 3) = -n.transpose() * rax;
+    J0.block<1, 3>(1, 3) = -t1.transpose() * rax;
+    J0.block<1, 3>(2, 3) = -t2.transpose() * rax;
+
+    J1.block<1, 3>(0, 0) = -n.transpose();
+    J1.block<1, 3>(1, 0) = -t1.transpose();
+    J1.block<1, 3>(2, 0) = -t2.transpose();
+    J1.block<1, 3>(0, 3) = n.transpose() * rbx;
+    J1.block<1, 3>(1, 3) = t1.transpose() * rbx;
+    J1.block<1, 3>(2, 3) = t2.transpose() * rbx;
 
     // Compute the J M^-1 blocks for each body. The code is provided.
-    // 
+     
     // However, together with the contact Jacobians J0 and J1, these will
     //   be used by the solver to assemble the blocked LCP matrices.
-    //
+    
     J0Minv.block(0,0,3,3) = (1.0f/body0->mass) * J0.block(0, 0, 3, 3);
     J0Minv.block(0,3,3,3) = J0.block(0, 3, 3, 3) * body0->Iinv;
     J1Minv.block(0,0,3,3) = (1.0f/body1->mass) * J1.block(0, 0, 3, 3);

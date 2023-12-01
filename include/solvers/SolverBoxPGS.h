@@ -15,5 +15,4 @@ public:
     // Implement PGS method that solves for the constraint forces in @a m_rigidBodySystem.
     //
     virtual void solve(float h);
-
 };

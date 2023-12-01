@@ -25,7 +25,7 @@ public:
     virtual ~Contact();
 
     Eigen::Vector3f p;          // The contact point.
-    Eigen::Vector3f n;          // The contact normal.
+    Eigen::Vector3f n;          // The contact  (body1 -> body0).
     Eigen::Vector3f t1, t2;     // Tangent directions.
     float mu;                   // Coefficient of friction.
     float pene;                 // Penetration

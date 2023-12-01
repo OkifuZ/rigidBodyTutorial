@@ -96,7 +96,10 @@ void RigidBodySystem::step(float dt)
     // The LCP solver will be called here.
     calcConstraintForces(dt);
 
-    // Done
+    // Semi-implicit integration
+    // Jacobi is explicitly evaluated
+    // lambda is implicitly evaluated
+    // u is integated over (lambda/dt + fext)
     for(RigidBody* b : m_bodies)
     {
         if (b->fixed) {
@@ -106,8 +109,8 @@ void RigidBodySystem::step(float dt)
         }
 
         // velocity
-        b->xdot += dt * (1.0f / b->mass) * b->f;
-        b->omega += dt * b->Iinv * (b->tau - b->omega.cross(b->I * b->omega));
+        b->xdot += dt * (1.0f / b->mass) * (b->f + b->fc);
+        b->omega += dt * b->Iinv * (b->tau + b->tauc - b->omega.cross(b->I * b->omega));
 
         // position
         b->x += dt * b->xdot;
