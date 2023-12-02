@@ -40,6 +40,7 @@ private:
 
     void createMarbleBox();
     void createSphereOnBox();
+    void createSlideBallBox();
 
     void draw();
     void drawGUI();

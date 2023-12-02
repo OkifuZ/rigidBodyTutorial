@@ -81,7 +81,6 @@ void SolverBoxPGS::solve(float h)
                 // Compute the diagonal term : Aii = J0*Minv0*J0^T + J1*Minv1*J1^T
                 Eigen::Matrix3f Aii = ct->J0Minv * ct->J0.transpose() + ct->J1Minv * ct->J1.transpose();
                 Aii(0, 0) += 1.0f / (ct->k * h * h + h * ct->b);
-                //Aii. += Eigen::Matrix3f::Identity() * (1.0f / (ct->k * h * h + h * ct->b));
 
                 // Update lambda by solving the sub-problem : Aii * contacts[i].lambda = x
                 //      For non-interpenetration constraints, lambda is non-negative and should be clamped

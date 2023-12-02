@@ -18,33 +18,28 @@ public:
         std::cout << "Loading marble box scenario" << std::endl;
 
         // Create two layers of "marbles", in a grid layout
-        //
+        int tire = 6;
         for (int i = 0; i < 9; ++i)
         {
             for (int j = 0; j < 9; ++j)
             {
-                RigidBody* body1 = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
-                body1->x.x() = -4.0f + (float)i * 1.0f;
-                body1->x.z() = -4.0f + (float)j * 1.0f;
-                body1->x.y() = 2.0f;
-                rigidBodySystem.addBody(body1);
-                body1->mesh->setSurfaceColor({ 1.0f, 0.1f, 0.1f });
-                body1->mesh->setTransparency(0.8f);
-                RigidBody* body2 = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
-                body2->x.x() = -4.0f + (float)i * 1.0f;
-                body2->x.z() = -4.0f + (float)j * 1.0f;
-                body2->x.y() = 3.0f;
-                rigidBodySystem.addBody(body2);
-                body2->mesh->setSurfaceColor({ 1.0f, 0.1f, 0.1f });
-                body2->mesh->setTransparency(0.8f);
+                for (int k = 0; k < tire; k++) {
+                    RigidBody* body = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
+                    body->x.x() = -4.0f + (float)i * 1.0f;
+                    body->x.z() = -4.0f + (float)j * 1.0f;
+                    body->x.y() = 2.0f + k * 1.0f;
+                    rigidBodySystem.addBody(body);
+                    body->mesh->setSurfaceColor({ 1.0f, 0.1f, 0.1f });
+                    body->mesh->setTransparency(0.8f);
+                }
             }
         }
 
-        RigidBody* body0 = new RigidBody(1.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.0f)), "resources/box_side.obj");
-        RigidBody* body1 = new RigidBody(1.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.0f)), "resources/box_side.obj");
-        RigidBody* body2 = new RigidBody(1.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.0f)), "resources/box_side.obj");
-        RigidBody* body3 = new RigidBody(1.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.4f)), "resources/box_side.obj");
-        RigidBody* body4 = new RigidBody(1.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
+        RigidBody* body0 = new RigidBody(10000.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.0f)), "resources/box_side.obj");
+        RigidBody* body1 = new RigidBody(10000.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.0f)), "resources/box_side.obj");
+        RigidBody* body2 = new RigidBody(10000.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.0f)), "resources/box_side.obj");
+        RigidBody* body3 = new RigidBody(10000.0f, new Box(Eigen::Vector3f(0.4f, 4.0f, 10.4f)), "resources/box_side.obj");
+        RigidBody* body4 = new RigidBody(10000.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
         body0->fixed = true;
         body1->fixed = true;
         body2->fixed = true;
@@ -60,6 +55,66 @@ public:
         body2->x.z() = 4.75f;
         body2->q = Eigen::AngleAxisf(1.57, Eigen::Vector3f(0, 1, 0));
         body3->x.z() = -4.75f;
+        body3->q = Eigen::AngleAxisf(1.57, Eigen::Vector3f(0, 1, 0));
+        body4->x.y() = -2.0f;
+
+        rigidBodySystem.addBody(body0);
+        rigidBodySystem.addBody(body1);
+        rigidBodySystem.addBody(body2);
+        rigidBodySystem.addBody(body3);
+        rigidBodySystem.addBody(body4);
+    }
+
+    static void createSlideBallBox(RigidBodySystem& rigidBodySystem)
+    {
+        rigidBodySystem.clear();
+        polyscope::removeAllStructures();
+
+        std::cout << "Loading slideBall box scenario" << std::endl;
+
+        int tire = 8;
+        for (int i = 0; i < 10; ++i)
+        {
+            for (int j = 0; j < 10; ++j)
+            {
+                for (int k = 0; k < tire; k++) {
+                    RigidBody* body = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
+                    if (k % 2) {
+                        body->x.x() = -4.5f + (float)i * 1.0f;
+                        body->x.z() = -4.5f + (float)j * 1.0f;
+                    }
+                    else {
+                        body->x.x() = -4.0f + (float)i * 1.0f;
+                        body->x.z() = -4.0f + (float)j * 1.0f;
+                    }
+                    body->x.y() = 2.0f + k * 1.0f;
+                    rigidBodySystem.addBody(body);
+                    body->mesh->setSurfaceColor({ 1.0f, 0.1f, 0.1f });
+                    body->mesh->setTransparency(0.8f);
+                }
+            }
+        }
+
+        RigidBody* body0 = new RigidBody(100000.0f, new Box(Eigen::Vector3f(0.4f, 6.0f, 12.0f)), "resources/box_side_12.obj");
+        RigidBody* body1 = new RigidBody(100000.0f, new Box(Eigen::Vector3f(0.4f, 6.0f, 12.0f)), "resources/box_side_12.obj");
+        RigidBody* body2 = new RigidBody(100000.0f, new Box(Eigen::Vector3f(0.4f, 6.0f, 12.0f)), "resources/box_side_12.obj");
+        RigidBody* body3 = new RigidBody(100000.0f, new Box(Eigen::Vector3f(0.4f, 6.0f, 12.4f)), "resources/box_side_12.obj");
+        RigidBody* body4 = new RigidBody(100000.0f, new Box(Eigen::Vector3f(12.0f, 0.4f, 12.0f)), "resources/box_bot_12.obj");
+        body0->fixed = true;
+        body1->fixed = true;
+        body2->fixed = true;
+        body3->fixed = true;
+        body4->fixed = true;
+        body0->mesh->setSurfaceColor({ 0.6f, 0.6f, 0.6f })->setSmoothShade(false)->setTransparency(0.4f);
+        body1->mesh->setSurfaceColor({ 0.6f, 0.6f, 0.6f })->setSmoothShade(false)->setTransparency(0.4f);
+        body2->mesh->setSurfaceColor({ 0.6f, 0.6f, 0.6f })->setSmoothShade(false)->setTransparency(0.4f);
+        body3->mesh->setSurfaceColor({ 0.6f, 0.6f, 0.6f })->setSmoothShade(false)->setTransparency(0.4f);
+        body4->mesh->setSurfaceColor({ 0.6f, 0.6f, 0.6f })->setSmoothShade(false)->setTransparency(0.4f);
+        body0->x.x() = 6.0f;
+        body1->x.x() = -6.0f;
+        body2->x.z() = 6.0f;
+        body2->q = Eigen::AngleAxisf(1.57, Eigen::Vector3f(0, 1, 0));
+        body3->x.z() = -6.0f;
         body3->q = Eigen::AngleAxisf(1.57, Eigen::Vector3f(0, 1, 0));
         body4->x.y() = -2.0f;
 
@@ -86,7 +141,7 @@ public:
         bodySphere->omega = Eigen::Vector3f(10.0f, 0.0f, 0.0f);
         bodySphere->mesh->setTransparency(0.7f);
 
-        RigidBody* bodyBox = new RigidBody(1.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
+        RigidBody* bodyBox = new RigidBody(10000.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
         bodyBox->fixed = true;
 
         rigidBodySystem.addBody(bodySphere);

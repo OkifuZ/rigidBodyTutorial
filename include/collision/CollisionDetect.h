@@ -53,5 +53,5 @@ private:
 
     RigidBodySystem* m_rigidBodySystem;     // Rigid body system where collision detection is performed.
     std::vector<Contact*> m_contacts;       // Contact array.
-    const float thickness = 1e-5f;
+    const float thickness = 0.0f;
 };

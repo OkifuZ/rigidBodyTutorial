@@ -126,6 +126,9 @@ void SimViewer::drawGUI()
     if (ImGui::Button("Marble box")) {
         createMarbleBox();
     }
+    if (ImGui::Button("Slide ball")) {
+        createSlideBallBox();
+    }
 }
 
 void SimViewer::draw()
@@ -146,7 +149,6 @@ void SimViewer::draw()
 
         updateRigidBodyMeshes(*m_rigidBodySystem);
         updateContactPoints(*m_rigidBodySystem);
-       
 
         // Clear step-once flag.
         m_stepOnce = false;
@@ -163,6 +165,13 @@ void SimViewer::createMarbleBox()
 void SimViewer::createSphereOnBox()
 {
     Scenarios::createSphereOnBox(*m_rigidBodySystem);
+    updateRigidBodyMeshes(*m_rigidBodySystem);
+    polyscope::view::resetCameraToHomeView();
+}
+
+void SimViewer::createSlideBallBox()
+{
+    Scenarios::createSlideBallBox(*m_rigidBodySystem);
     updateRigidBodyMeshes(*m_rigidBodySystem);
     polyscope::view::resetCameraToHomeView();
 }
