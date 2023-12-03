@@ -5,7 +5,14 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(OpenGL REQUIRED)
- 
+find_package(hpp-fcl REQUIRED)
+
+# set(Boost_USE_STATIC_LIBS   ON) 
+# find_package(Boost QUIET REQUIRED math) 
+# if(NOT Boost_FOUND)
+#     message(FATAL_ERROR "Boost Not found")
+# endif()
+
 set(collision_HEADERS include/collision/CollisionDetect.h 
                       include/collision/Geometry.h )
 set(collision_SOURCE src/collision/CollisionDetect.cpp ) 
@@ -40,8 +47,8 @@ add_executable (rigidBodyTutorial main.cpp
           ${viewer_HEADERS} ${viewer_SOURCE} )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/3rdParty/polyscope)
-target_link_libraries(rigidBodyTutorial OpenGL::GL polyscope)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 3rdParty/Eigen3/include/eigen3 ${COMMON_INCLUDES})
+target_link_libraries(rigidBodyTutorial OpenGL::GL polyscope hpp-fcl::hpp-fcl Boost::chrono Boost::thread Boost::date_time Boost::serialization Boost::filesystem)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include 3rdParty/Eigen3/include/eigen3 ${COMMON_INCLUDES} ${hpp-fcl_INCLUDE_DIRS})
 
 # Setup source code groups
 #
