@@ -3,7 +3,7 @@
 #include <Eigen/Dense>
 
 // List of geometry type ids.
-enum eGeometryType { kSphere, kBox };
+enum eGeometryType { kSphere, kBox, kPlane };
 
 // Generic geometry interface.
 //
@@ -66,4 +66,22 @@ public:
 
     virtual eGeometryType getType() const override { return kBox; }
 
+};
+
+class Plane : public Geometry
+{
+public:
+    Eigen::Vector3f normal;         // The plane normal.
+
+    Plane(const Eigen::Vector3f& _normal)
+        : normal(_normal) {}
+    virtual ~Plane() {}
+
+    virtual Eigen::Matrix3f computeInertia(float _mass) override
+    {
+        m_I.setIdentity();
+        return _mass * m_I;
+    }
+
+    virtual eGeometryType getType() const override { return kPlane; }
 };

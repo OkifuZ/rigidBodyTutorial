@@ -32,12 +32,17 @@ namespace
     static void updateRigidBodyMeshes(RigidBodySystem& _rigidBodySystem)
     {
         auto& bodies = _rigidBodySystem.getBodies();
-        for(unsigned int i = 0; i < bodies.size(); ++i)
-        { 
-            Eigen::Isometry3f tm = Eigen::Isometry3f::Identity();
-            tm.linear() = bodies[i]->q.toRotationMatrix();
-            tm.translation() = bodies[i]->x;
-            bodies[i]->mesh->setTransform( glm::make_mat4x4(tm.data()) );
+#pragma omp parallel default(shared)
+        {
+            // Update velocities	
+#pragma omp for schedule(static)
+            for (unsigned int i = 0; i < bodies.size(); ++i)
+            {
+                Eigen::Isometry3f tm = Eigen::Isometry3f::Identity();
+                tm.linear() = bodies[i]->q.toRotationMatrix();
+                tm.translation() = bodies[i]->x;
+                bodies[i]->mesh->setTransform(glm::make_mat4x4(tm.data()));
+            }
         }
     }
 
@@ -58,6 +63,29 @@ namespace
         pointCloud->setPointColor({ 1.0f, 0.0f, 0.0f });
         pointCloud->setPointRadius(0.005);
         pointCloud->addVectorQuantity("normal", contactN)->setVectorColor({ 1.0f, 1.0f, 0.0f })->setVectorLengthScale(0.05f)->setEnabled(true);
+
+    }
+
+    static void updateAuxPoints(RigidBodySystem& _rigidBodySystem)
+    {
+        const auto& contacts = _rigidBodySystem.getContacts();
+        const auto& rbs = _rigidBodySystem.getBodies();
+        const unsigned int numContacts = contacts.size();
+        Eigen::MatrixXf contactX(numContacts * 2, 3);
+        Eigen::MatrixXf contactR(numContacts * 2, 3);
+
+        for (unsigned int i = 0; i < numContacts; ++i)
+        {
+            contactX.row(i * 2 + 0) = contacts[i]->body0->x.transpose();
+            contactX.row(i * 2 + 1) = contacts[i]->body1->x.transpose();
+            contactR.row(i*2+0) = (contacts[i]->p - contacts[i]->body0->x).transpose();
+            contactR.row(i*2+1) = (contacts[i]->p - contacts[i]->body1->x).transpose();
+        }
+
+        auto pointCloud = polyscope::registerPointCloud("radius", contactX);
+        pointCloud->setPointColor({ 1.0f, 0.0f, 0.0f });
+        pointCloud->setPointRadius(0.005);
+        pointCloud->addVectorQuantity("normal", contactR)->setVectorColor({ 1.0f, 1.0f, 0.0f })->setVectorLengthScale(0.05f)->setEnabled(true);
 
     }
 
@@ -129,6 +157,15 @@ void SimViewer::drawGUI()
     if (ImGui::Button("Slide ball")) {
         createSlideBallBox();
     }
+    if (ImGui::Button("Box fall")) {
+        createBoxFall();
+    }
+    if (ImGui::Button("Box Palne")) {
+        createBoxPalne();
+    }
+    if (ImGui::Button("Ball Box stack")) {
+        createBallBoxStack();
+    }
 }
 
 void SimViewer::draw()
@@ -148,7 +185,8 @@ void SimViewer::draw()
         }
 
         updateRigidBodyMeshes(*m_rigidBodySystem);
-        updateContactPoints(*m_rigidBodySystem);
+        //updateContactPoints(*m_rigidBodySystem);
+        //updateAuxPoints(*m_rigidBodySystem);
 
         // Clear step-once flag.
         m_stepOnce = false;
@@ -172,6 +210,24 @@ void SimViewer::createSphereOnBox()
 void SimViewer::createSlideBallBox()
 {
     Scenarios::createSlideBallBox(*m_rigidBodySystem);
+    updateRigidBodyMeshes(*m_rigidBodySystem);
+    polyscope::view::resetCameraToHomeView();
+}
+
+void SimViewer::createBoxFall() {
+    Scenarios::createBoxFall(*m_rigidBodySystem);
+    updateRigidBodyMeshes(*m_rigidBodySystem);
+    polyscope::view::resetCameraToHomeView();
+}
+
+void SimViewer::createBoxPalne() {
+    Scenarios::createBoxOnPlane(*m_rigidBodySystem);
+    updateRigidBodyMeshes(*m_rigidBodySystem);
+    polyscope::view::resetCameraToHomeView();
+}
+
+void SimViewer::createBallBoxStack() {
+    Scenarios::createBoxBallStack(*m_rigidBodySystem);
     updateRigidBodyMeshes(*m_rigidBodySystem);
     polyscope::view::resetCameraToHomeView();
 }

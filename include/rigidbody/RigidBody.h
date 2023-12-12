@@ -1,6 +1,10 @@
 #pragma once
 
+#include <hpp/fcl/shape/geometric_shapes.h>
+#include <hpp/fcl/shape/convex.h>
+
 #include "collision/Geometry.h"
+
 #include <Eigen/Dense>
 #include <vector>
 
@@ -43,10 +47,14 @@ public:
     Eigen::Vector3f fc;                 // Linear constraint force.
     Eigen::Vector3f tauc;               // Angular constraint force
 
+    std::unique_ptr<hpp::fcl::ShapeBase> fcl_shape;
+    hpp::fcl::Convex<hpp::fcl::Quadrilateral>* fcl_convex{};
+    std::unique_ptr<hpp::fcl::Transform3f> fcl_trans;
     std::unique_ptr<Geometry> geometry; // The geometry of the rigid body.
     std::vector<Contact*> contacts;     // Pointer array of contact constraints involving this body.
 
     polyscope::SurfaceMesh* mesh;                         // Used for rendering
 
+    void update_fcl_transform();
 
 };

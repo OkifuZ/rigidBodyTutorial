@@ -43,16 +43,22 @@ void SolverBoxPGS::solve(float h)
         // Compute the right-hand side vector : b = -gamma*phi/h - J*vel - dt*JMinvJT*force ?
         // Compute the right-hand side vector : b = -gamma*phi/h - J*vel - dt*JMinv*force
         std::vector<Eigen::Vector3f> b(numContacts);
-        for (int i = 0; i < numContacts; i++) {
-            auto& ct = contacts[i];
-            b[i] =
-                -(ct->J0.block<3, 3>(0, 0) * ct->body0->xdot + ct->J0.block<3, 3>(0, 3) * ct->body0->omega)  // J0*vel0
-                - (ct->J1.block<3, 3>(0, 0) * ct->body1->xdot + ct->J1.block<3, 3>(0, 3) * ct->body1->omega) // J1*vel1
-                - h * (ct->J0Minv.block<3, 3>(0, 0) * ct->body0->f + ct->J0Minv.block<3, 3>(0, 3) * ct->body0->tau) // dt*J0Minv*force0
-                - h * (ct->J1Minv.block<3, 3>(0, 0) * ct->body1->f + ct->J1Minv.block<3, 3>(0, 3) * ct->body1->tau);// dt*J1Minv*force1
-            // stabilization
-            float gamma = h * ct->k / (h * ct->k + ct->b);
-            b[i] -= gamma * ct->phi * hinv;
+#pragma omp parallel default(shared)
+        {
+            // Update velocities rigidbody	
+#pragma omp for schedule(static)
+            for (int i = 0; i < numContacts; i++) {
+                printf("%d ", i);
+                auto& ct = contacts[i];
+                b[i] =
+                    -(ct->J0.block<3, 3>(0, 0) * ct->body0->xdot + ct->J0.block<3, 3>(0, 3) * ct->body0->omega)  // J0*vel0
+                    - (ct->J1.block<3, 3>(0, 0) * ct->body1->xdot + ct->J1.block<3, 3>(0, 3) * ct->body1->omega) // J1*vel1
+                    - h * (ct->J0Minv.block<3, 3>(0, 0) * ct->body0->f + ct->J0Minv.block<3, 3>(0, 3) * ct->body0->tau) // dt*J0Minv*force0
+                    - h * (ct->J1Minv.block<3, 3>(0, 0) * ct->body1->f + ct->J1Minv.block<3, 3>(0, 3) * ct->body1->tau);// dt*J1Minv*force1
+                // stabilization
+                float gamma = h * ct->k / (h * ct->k + ct->b);
+                b[i] -= gamma * ct->phi * hinv;
+            }
         }
 
         // PGS main loop.

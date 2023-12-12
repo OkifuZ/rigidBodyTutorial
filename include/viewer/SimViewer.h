@@ -41,6 +41,9 @@ private:
     void createMarbleBox();
     void createSphereOnBox();
     void createSlideBallBox();
+    void createBoxFall();
+    void createBoxPalne();
+    void createBallBoxStack();
 
     void draw();
     void drawGUI();

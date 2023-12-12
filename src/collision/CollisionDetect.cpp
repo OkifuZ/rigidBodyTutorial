@@ -4,11 +4,18 @@
 #include "rigidbody/RigidBody.h"
 #include "rigidbody/RigidBodySystem.h"
 
+#include <hpp/fcl/narrowphase/narrowphase.h>
+#include <hpp/fcl/collision.h>
+
 #include <iostream>
 
 CollisionDetect::CollisionDetect(RigidBodySystem* rigidBodySystem) : m_rigidBodySystem(rigidBodySystem)
 {
-
+    req_fcl = hpp::fcl::CollisionRequest(hpp::fcl::CONTACT | hpp::fcl::DISTANCE_LOWER_BOUND, 1);
+    req_fcl.enable_cached_gjk_guess = false;
+    req_fcl.distance_upper_bound = 1e-4;
+    req_fcl.enable_contact = true;
+    req_fcl.num_max_contacts = 100;
 }
 
 void CollisionDetect::detectCollisions()
@@ -52,16 +59,82 @@ void CollisionDetect::detectCollisions()
             }
         }
     }
+
+}
+
+void CollisionDetect::detectCollisions_fcl() {
+    clear();
+
+    auto bodies = m_rigidBodySystem->getBodies();
+    for (auto& body : bodies) {
+        if (body->fixed) continue;
+        body->update_fcl_transform();
+    }
+
+    for (unsigned int i = 0; i < bodies.size(); ++i)
+    {
+        for (unsigned int j = i + 1; j < bodies.size(); ++j)
+        {
+            RigidBody* body0 = bodies[i];
+            RigidBody* body1 = bodies[j];
+
+            // Special case: skip tests for pairs of static bodies.
+            //
+            if (body0->fixed && body1->fixed)
+                continue;
+
+            // Test for sphere-sphere collision.
+            if (body0->geometry->getType() == kSphere &&
+                body1->geometry->getType() == kSphere)
+            {
+                collisionDetectSphereSphere(body0, body1);
+            }
+            // Test for sphere-box collision
+            else if (body0->geometry->getType() == kSphere &&
+                body1->geometry->getType() == kBox)
+            {
+                collisionDetectSphereBox(body0, body1);
+            }
+            // Test for box-sphere collision (order swap)
+            else if (body1->geometry->getType() == kSphere &&
+                body0->geometry->getType() == kBox)
+            {
+                collisionDetectSphereBox(body1, body0);
+            }
+            else if (body0->geometry->getType() == kBox &&
+                body1->geometry->getType() == kBox)
+            {
+                collisionDetectBoxBox_fcl(body1, body0);
+            }
+            else if (body0->geometry->getType() == kBox &&
+                body1->geometry->getType() == kPlane)
+            {
+                collisionDetectBoxPlane(body0, body1);
+            }
+            else if (body0->geometry->getType() == kPlane &&
+                body1->geometry->getType() == kBox)
+            {
+                collisionDetectBoxPlane(body1, body0);
+            }
+        }
+    }
+    //print_contacts();
 }
 
 void CollisionDetect::computeContactJacobians()
 {
     // Build constraint Jacobians for all contacts
     //
-    for(auto c : m_contacts)
+    #pragma omp parallel default(shared)
     {
-        c->computeContactFrame();
-        c->computeJacobian();
+        // Update velocities	
+#pragma omp for schedule(static) 
+        for (int i = 0; i < m_contacts.size(); i++)
+        {
+            auto& c = m_contacts[i];
+            c->computeContactFrame();
+            c->computeJacobian();
+        }
     }
 }
 
@@ -108,6 +181,11 @@ void CollisionDetect::collisionDetectSphereSphere(RigidBody* body0, RigidBody* b
     }
 }
 
+void CollisionDetect::collisionDetectSpherePlane(RigidBody* body0, RigidBody* body1)
+{
+    // todo
+}
+
 void CollisionDetect::collisionDetectSphereBox(RigidBody* body0, RigidBody* body1)
 {
     // TODO Implement sphere-box collision detection.
@@ -145,6 +223,17 @@ void CollisionDetect::collisionDetectSphereBox(RigidBody* body0, RigidBody* body
     }
 }
 
+void CollisionDetect::collisionDetectBoxBox_fcl(RigidBody* body0, RigidBody* body1) {
+    hpp::fcl::collide(body0->fcl_convex, *body0->fcl_trans, body1->fcl_convex, *body1->fcl_trans, req_fcl, res_fcl);
+    //hpp::fcl::collide(body0->fcl_shape.get(), *body0->fcl_trans, body1->fcl_shape.get(), *body1->fcl_trans, req_fcl, res_fcl);
+    if (res_fcl.isCollision()) {
+        const auto& contacts = res_fcl .getContacts();
+        for (const auto& ct : contacts) {
+            m_contacts.push_back(new Contact(body1, body0, ct.pos.cast<float>(), ct.normal.cast<float>(), -ct.penetration_depth));
+        }
+    }
+    res_fcl.clear();
+}
 
 Eigen::Vector3f CollisionDetect::ClosestPtPointBox(const Eigen::Vector3f& pt, const Eigen::Vector3f& bdim) {
     Eigen::Vector3f q;
@@ -178,4 +267,54 @@ Eigen::Vector3f CollisionDetect::ClosestPtPointBox(const Eigen::Vector3f& pt, co
     }
     //if (normal != Eigen::Vector3f::Zero()) normal.normalize();
     return q;
+}
+
+
+
+static inline bool collisionDetectPointPlane(const Eigen::Vector3f& p, const Eigen::Vector3f& plane_p, const Eigen::Vector3f& plane_n, float& phi)
+{
+    const float dp = (p - plane_p).dot(plane_n);
+    if (dp < 0.0f)
+    {
+        phi = std::min(0.0f, dp);
+        return true;
+    }
+    return false;
+}
+
+
+void CollisionDetect::collisionDetectBoxPlane(RigidBody* body0, RigidBody* body1)
+{
+    Box* box = dynamic_cast<Box*>(body0->geometry.get());
+    Plane* plane = dynamic_cast<Plane*>(body1->geometry.get());
+    const Eigen::Vector3f pplane = body1->x;
+    const Eigen::Vector3f nplane = body1->q * plane->normal;
+    const Eigen::Vector3f plocal[8] = {
+        0.5f * Eigen::Vector3f(-box->dim(0), -box->dim(1), -box->dim(2)),
+        0.5f * Eigen::Vector3f(-box->dim(0), -box->dim(1),  box->dim(2)),
+        0.5f * Eigen::Vector3f(-box->dim(0),  box->dim(1), -box->dim(2)),
+        0.5f * Eigen::Vector3f(-box->dim(0),  box->dim(1),  box->dim(2)),
+        0.5f * Eigen::Vector3f(box->dim(0), -box->dim(1), -box->dim(2)),
+        0.5f * Eigen::Vector3f(box->dim(0), -box->dim(1),  box->dim(2)),
+        0.5f * Eigen::Vector3f(box->dim(0),  box->dim(1), -box->dim(2)),
+        0.5f * Eigen::Vector3f(box->dim(0),  box->dim(1),  box->dim(2))
+    };
+
+    for (unsigned int i = 0; i < 8; ++i)
+    {
+        const Eigen::Vector3f pbox = body0->q * plocal[i] + body0->x;
+        float phi;
+        if (collisionDetectPointPlane(pbox, pplane, nplane, phi))
+        {
+            m_contacts.push_back(new Contact(body0, body1, pbox, nplane, phi));
+        }
+    }
+}
+
+
+void CollisionDetect::print_contacts() {
+    for (int i = 0; i < m_contacts.size(); i++) {
+        const auto& ct = m_contacts[i];
+        std::cout << i << " = p: " << ct->p.transpose() << ", n: " << ct->n.transpose() << ", phi: " << ct->phi << "\n";
+    }
 }

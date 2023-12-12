@@ -1,5 +1,8 @@
 #pragma once
 
+#include <hpp/fcl/narrowphase/narrowphase.h>
+#include <hpp/fcl/collision.h>
+
 #include <Eigen/Dense>
 #include <vector>
 
@@ -26,6 +29,8 @@ public:
     //
     void detectCollisions();
 
+    void detectCollisions_fcl();
+
     void clear();
 
     // Compute the Jacobians for contacts
@@ -33,6 +38,8 @@ public:
 
     const std::vector<Contact*>& getContacts() const { return m_contacts; }
     std::vector<Contact*>& getContacts() { return m_contacts; }
+
+    void print_contacts();
 
 private:
 
@@ -45,9 +52,18 @@ private:
     // Assumes that @a body0 has a sphere geometry and @a body1 has a box geometry.
     //
     void collisionDetectSphereBox(RigidBody* body0, RigidBody* body1);
+    void collisionDetectSpherePlane(RigidBody* body0, RigidBody* body1);
+
+    void collisionDetectBoxBox_fcl(RigidBody* body0, RigidBody* body1);
+
+    void collisionDetectBoxPlane(RigidBody* body0, RigidBody* body1);
 
     Eigen::Vector3f ClosestPtPointBox(const Eigen::Vector3f& pt, const Eigen::Vector3f& bdim);
     Eigen::Vector3f ClosestPtPointBox(const Eigen::Vector3f& pt, const Eigen::Vector3f& bdim, Eigen::Vector3f& normal);
+
+    hpp::fcl::CollisionRequest req_fcl;
+    hpp::fcl::CollisionResult res_fcl;
+
 
 private:
 

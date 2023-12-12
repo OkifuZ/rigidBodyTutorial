@@ -10,6 +10,50 @@ class Scenarios
 public:
     // Box filled with balls.
     //
+    static void createBoxOnPlane(RigidBodySystem& rigidBodySystem)
+    {
+        rigidBodySystem.clear();
+        polyscope::removeAllStructures();
+
+        RigidBody* body0 = new RigidBody(100000.0f, new Plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f)), "resources/plane.obj");
+        body0->fixed = true;
+
+        RigidBody* body1 = new RigidBody(1.0f, new Box(Eigen::Vector3f(1.0f, 1.0f, 1.0f)), "resources/box.obj");
+        body1->x = Eigen::Vector3f(0.0f, 0.79f, 0.0f);
+
+        RigidBody* body2 = new RigidBody(10.0f, new Box(Eigen::Vector3f(1.0f, 1.0f, 1.0f)), "resources/box.obj");
+        body2->x = Eigen::Vector3f(2.0f, 0.79f, 0.0f);
+        body2->xdot = Eigen::Vector3f(0.0f, 0.0f, 10.0f);
+
+        rigidBodySystem.addBody(body0);
+        rigidBodySystem.addBody(body1);
+        rigidBodySystem.addBody(body2);
+    }
+
+    static void createBoxBallStack(RigidBodySystem& rigidBodySystem)
+    {
+        rigidBodySystem.clear();
+        polyscope::removeAllStructures();
+
+        RigidBody* body0 = new RigidBody(10.0f, new Plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f)), "resources/plane.obj");
+        body0->fixed = true;
+
+        RigidBody* body1 = new RigidBody(1.0f, new Box(Eigen::Vector3f(1.0f, 1.0f, 1.0f)), "resources/box.obj");
+        body1->x = Eigen::Vector3f(0.0f, 0.5f, 0.0f);
+        RigidBody* body2 = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
+        body2->x = Eigen::Vector3f(0.0f, 1.5f, 0.0f);
+        RigidBody* body3 = new RigidBody(1.0f, new Box(Eigen::Vector3f(1.0f, 1.0f, 1.0f)), "resources/box.obj");
+        body3->x = Eigen::Vector3f(0.0f, 2.5f, 0.0f);
+        RigidBody* body4 = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
+        body4->x = Eigen::Vector3f(0.0f, 3.5f, 0.0f);
+
+        rigidBodySystem.addBody(body0);
+        rigidBodySystem.addBody(body1);
+        rigidBodySystem.addBody(body2);
+        rigidBodySystem.addBody(body3);
+        rigidBodySystem.addBody(body4);
+    }
+
     static void createMarbleBox(RigidBodySystem& rigidBodySystem)
     {
         rigidBodySystem.clear();
@@ -24,7 +68,10 @@ public:
             for (int j = 0; j < 9; ++j)
             {
                 for (int k = 0; k < tire; k++) {
-                    RigidBody* body = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
+                    RigidBody* body{};
+                    /*if (k == 4) body = new RigidBody(100.0f, new Sphere(0.5f), "resources/sphere.obj");
+                    else body = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");*/
+                    body = new RigidBody(1.0f, new Sphere(0.5f), "resources/sphere.obj");
                     body->x.x() = -4.0f + (float)i * 1.0f;
                     body->x.z() = -4.0f + (float)j * 1.0f;
                     body->x.y() = 2.0f + k * 1.0f;
@@ -141,13 +188,46 @@ public:
         bodySphere->omega = Eigen::Vector3f(10.0f, 0.0f, 0.0f);
         bodySphere->mesh->setTransparency(0.7f);
 
-        RigidBody* bodyBox = new RigidBody(10000.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
+        RigidBody* bodyBox = new RigidBody(1.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
         bodyBox->fixed = true;
 
         rigidBodySystem.addBody(bodySphere);
         rigidBodySystem.addBody(bodyBox);
 
         bodySphere->mesh->setSurfaceColor({ 0.1f, 1.0f, 0.2f })->setEdgeWidth(1.0f);
+        bodyBox->mesh->setSurfaceColor({ 0.2f, 0.2f, 0.2f })->setSmoothShade(false)->setTransparency(0.5f);
+    }
+
+    static void createBoxFall(RigidBodySystem& rigidBodySystem) {
+        rigidBodySystem.clear();
+        polyscope::removeAllStructures();
+
+        std::cout << "Loading box fall scenario." << std::endl;
+
+        int tire = 1;
+        for (int i = 0; i < 1; ++i)
+        {
+            for (int j = 0; j < 1; ++j)
+            {
+                for (int k = 0; k < tire; k++) {
+                    RigidBody* body = new RigidBody(1.0f, new Box(Eigen::Vector3f(1.0f, 1.0f, 1.0f)), "resources/box.obj");
+                    /*body->x.x() = -4.0f + (float)i * 1.2f;
+                    body->x.z() = -4.0f + (float)j * 1.2f;*/
+                    body->x.x() = (float)i * 1.2f + 0.0f;
+                    body->x.z() = (float)j * 1.2f;
+                    body->x.y() = 2.0f + k * 1.2f;
+                    rigidBodySystem.addBody(body);
+                    body->mesh->setSurfaceColor({ 1.0f, 0.1f, 0.1f });
+                    body->mesh->setTransparency(0.8f);
+                    //if (j == 0) body->fixed = true;
+                }
+            }
+        }
+        RigidBody* bodyBox = new RigidBody(10000.0f, new Box(Eigen::Vector3f(10.0f, 0.4f, 10.0f)), "resources/box_bot.obj");
+        bodyBox->x.x() = 0.2f;
+        bodyBox->fixed = true;
+        rigidBodySystem.addBody(bodyBox);
+
         bodyBox->mesh->setSurfaceColor({ 0.2f, 0.2f, 0.2f })->setSmoothShade(false)->setTransparency(0.5f);
     }
 
